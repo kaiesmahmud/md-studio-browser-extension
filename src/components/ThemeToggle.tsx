@@ -25,32 +25,25 @@ const OPTIONS: Array<{ value: ThemeMode; label: string; icon: typeof Sun }> = [
     { value: "system", label: "System", icon: Monitor },
 ];
 
-export function ThemeToggle({
-    mode,
-    resolved,
-    onModeChange,
-}: ThemeToggleProps) {
-    const ActiveIcon = mode === "system" ? Monitor : resolved === "dark" ? Moon : Sun;
+export function ThemeToggle({ mode, resolved, onModeChange }: ThemeToggleProps) {
+    const ActiveIcon =
+        mode === "system" ? Monitor : resolved === "dark" ? Moon : Sun;
 
     return (
         <DropdownMenu>
             <Tooltip>
-                <TooltipTrigger
-                    render={
-                        <DropdownMenuTrigger
-                            render={
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-8 rounded-lg"
-                                    aria-label="Change theme"
-                                />
-                            }
+                <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 rounded-lg"
+                            aria-label="Change theme"
                         >
                             <ActiveIcon className="size-4" />
-                        </DropdownMenuTrigger>
-                    }
-                />
+                        </Button>
+                    </DropdownMenuTrigger>
+                </TooltipTrigger>
                 <TooltipContent side="bottom">Theme</TooltipContent>
             </Tooltip>
 

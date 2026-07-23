@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useTheme } from "@/hooks/useTheme";
 import { detectEngine, supportsFileSystemAccess } from "@/lib/browser";
 
@@ -14,7 +15,7 @@ export function App() {
     const fsa = supportsFileSystemAccess();
 
     return (
-        <>
+        <TooltipProvider delayDuration={300}>
             <AppShell
                 toolbar={
                     <div className="flex h-12 items-center gap-2 px-3">
@@ -31,7 +32,11 @@ export function App() {
 
                         <div className="flex-1" />
 
-                        <ThemeToggle mode={mode} resolved={resolved} onModeChange={setMode} />
+                        <ThemeToggle
+                            mode={mode}
+                            resolved={resolved}
+                            onModeChange={setMode}
+                        />
                     </div>
                 }
                 statusBar={
@@ -63,6 +68,6 @@ export function App() {
             </AppShell>
 
             <Toaster position="bottom-right" richColors />
-        </>
+        </TooltipProvider>
     );
 }

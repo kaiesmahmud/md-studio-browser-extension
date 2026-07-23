@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { crx } from "@crxjs/vite-plugin";
 import path from "node:path";
-import { chromeManifest, firefoxManifest } from "./manifest.config";
+import { chromeManifest, firefoxManifest } from "./manifest.config.js";
 
 const target = process.env.BROWSER_TARGET === "firefox" ? "firefox" : "chrome";
 const manifest = target === "firefox" ? firefoxManifest : chromeManifest;
@@ -29,27 +29,27 @@ export default defineConfig({
     chunkSizeWarningLimit: 2500,
     rollupOptions: {
       output: {
-        manualChunks: {
-          mermaid: ["mermaid"],
-          codemirror: [
-            "@codemirror/state",
-            "@codemirror/view",
-            "@codemirror/commands",
-            "@codemirror/lang-markdown",
-            "@codemirror/language",
-            "@codemirror/search",
-            "@codemirror/autocomplete",
-          ],
-          markdown: [
-            "react-markdown",
-            "remark-gfm",
-            "remark-frontmatter",
-            "rehype-sanitize",
-            "rehype-highlight",
-            "rehype-slug",
-            "rehype-autolink-headings",
-          ],
-          pdf: ["jspdf", "html2canvas"],
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return undefined;
+
+          if (id.includes("mermaid")) return "mermaid";
+          if (id.includes("@codemirror") || id.includes("@lezer")) {
+            return "codemirror";
+          }
+          if (
+            id.includes("react-markdown") ||
+            id.includes("remark-") ||
+            id.includes("rehype-") ||
+            id.includes("micromark") ||
+            id.includes("mdast-") ||
+            id.includes("hast-")
+          ) {
+            return "markdown";
+          }
+          if (id.includes("jspdf") || id.includes("html2canvas")) {
+            return "pdf";
+          }
+          return undefined;
         },
       },
     },
