@@ -28,6 +28,9 @@ export default defineConfig({
     target: "esnext",
     chunkSizeWarningLimit: 2500,
     rollupOptions: {
+      input: {
+        editor: path.resolve(__dirname, "src/editor/index.html"),
+      },
       output: {
         manualChunks(id: string) {
           if (!id.includes("node_modules")) return undefined;

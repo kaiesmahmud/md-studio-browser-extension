@@ -1,24 +1,10 @@
 <!doctype html>
-<html lang="en" suppressHydrationWarning>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>md-studio</title>
-    <script>
-      // Applied before first paint to prevent a theme flash.
-      (function () {
-        try {
-          var stored = localStorage.getItem("md-studio-theme");
-          var mode = stored || "system";
-          var isDark =
-            mode === "dark" ||
-            (mode === "system" &&
-              window.matchMedia("(prefers-color-scheme: dark)").matches);
-          if (isDark) document.documentElement.classList.add("dark");
-          document.documentElement.style.colorScheme = isDark ? "dark" : "light";
-        } catch (e) {}
-      })();
-    </script>
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>

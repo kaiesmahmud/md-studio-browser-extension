@@ -1,18 +1,24 @@
-import { FileText } from "lucide-react";
+import { useState } from "react";
+import { FileText, FolderOpen, Save, X } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
+import { SaveChoiceDialog } from "@/components/SaveChoiceDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useFileSystem } from "@/hooks/useFileSystem";
 import { useTheme } from "@/hooks/useTheme";
-import { detectEngine, supportsFileSystemAccess } from "@/lib/browser";
+import { detectEngine } from "@/lib/browser";
+import { formatBytes } from "@/lib/fs";
 
 export function App() {
     const { mode, resolved, setMode } = useTheme();
+    const fs = useFileSystem();
+    const [saveOpen, setSaveOpen] = useState(false);
 
     const engine = detectEngine();
-    const fsa = supportsFileSystemAccess();
 
     return (
         <TooltipProvider delayDuration={300}>
@@ -30,7 +36,53 @@ export function App() {
 
                         <Separator orientation="vertical" className="mx-1 h-5" />
 
+                        {fs.doc && (
+                            <>
+                                <span className="max-w-56 truncate text-sm">
+                                    {fs.doc.meta.name}
+                                </span>
+                                {fs.dirty && (
+                                    <span className="bg-primary size-1.5 rounded-full" />
+                                )}
+                            </>
+                        )}
+
                         <div className="flex-1" />
+
+                        {fs.doc && (
+                            <>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="gap-1.5"
+                                    disabled={fs.busy}
+                                    onClick={() => setSaveOpen(true)}
+                                >
+                                    <Save className="size-4" />
+                                    Save
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="gap-1.5"
+                                    disabled={fs.busy}
+                                    onClick={fs.open}
+                                >
+                                    <FolderOpen className="size-4" />
+                                    Open
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="size-8"
+                                    onClick={fs.closeDocument}
+                                    aria-label="Close document"
+                                >
+                                    <X className="size-4" />
+                                </Button>
+                                <Separator orientation="vertical" className="mx-1 h-5" />
+                            </>
+                        )}
 
                         <ThemeToggle
                             mode={mode}
@@ -43,29 +95,53 @@ export function App() {
                     <div className="text-muted-foreground flex h-8 items-center gap-4 px-3 text-xs">
                         <span>engine: {engine}</span>
                         <span>
-                            file system access: {fsa ? "available" : "unavailable (fallback)"}
+                            overwrite:{" "}
+                            {fs.capabilities.canOverwrite ? "supported" : "unsupported"}
                         </span>
+                        {fs.doc && (
+                            <>
+                                <span>{formatBytes(fs.doc.meta.size)}</span>
+                                <span>{fs.doc.content.length} chars</span>
+                                <span>{fs.dirty ? "unsaved changes" : "saved"}</span>
+                            </>
+                        )}
                     </div>
                 }
             >
-                <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
-                    <div className="glass-strong flex size-16 items-center justify-center rounded-2xl">
-                        <FileText className="text-primary size-7" />
-                    </div>
-                    <div className="space-y-1 text-center">
-                        <h1 className="text-xl font-semibold tracking-tight">
-                            Shell is running
-                        </h1>
-                        <p className="text-muted-foreground max-w-sm text-sm">
-                            Glass surfaces, mesh backdrop and theming are wired up. The file
-                            picker and editor arrive in the next step.
-                        </p>
-                    </div>
-                    <Button variant="secondary" size="sm">
-                        Placeholder action
-                    </Button>
-                </div>
+                {fs.doc ? (
+                    <textarea
+                        value={fs.doc.content}
+                        onChange={(event) => fs.setContent(event.target.value)}
+                        spellCheck={false}
+                        className="h-full w-full resize-none bg-transparent p-4 font-mono text-sm outline-none"
+                        placeholder="Start typing…"
+                    />
+                ) : (
+                    <EmptyState
+                        useNativePicker={fs.capabilities.fileSystemAccess}
+                        busy={fs.busy}
+                        onOpenPicker={fs.open}
+                        onOpenFile={fs.openFile}
+                        onNewDocument={fs.newDocument}
+                    />
+                )}
             </AppShell>
+
+            <SaveChoiceDialog
+                open={saveOpen}
+                onOpenChange={setSaveOpen}
+                filename={fs.doc?.meta.name ?? ""}
+                canOverwrite={fs.canOverwrite}
+                busy={fs.busy}
+                onSaveExisting={async () => {
+                    const ok = await fs.saveExisting();
+                    if (ok) setSaveOpen(false);
+                }}
+                onSaveAsNew={async () => {
+                    const ok = await fs.saveAsNew();
+                    if (ok) setSaveOpen(false);
+                }}
+            />
 
             <Toaster position="bottom-right" richColors />
         </TooltipProvider>
