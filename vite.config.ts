@@ -21,6 +21,8 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    mainFields: ["browser", "module", "main"],
+    conditions: ["browser", "import", "module", "default"],
   },
   build: {
     outDir: `dist/${target}`,

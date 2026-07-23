@@ -1,48 +1,61 @@
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { FileText, FolderOpen, Save, X } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { EditorWorkspace } from "@/components/EditorWorkspace";
+import type { EditorWorkspaceHandle } from "@/components/EditorWorkspace";
 import { EmptyState } from "@/components/EmptyState";
 import { SaveChoiceDialog } from "@/components/SaveChoiceDialog";
+import { StatusBar } from "@/components/StatusBar";
+import { TableOfContents } from "@/components/TableOfContents";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ViewModeToggle } from "@/components/ViewModeToggle";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useFileSystem } from "@/hooks/useFileSystem";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useTheme } from "@/hooks/useTheme";
-import { detectEngine } from "@/lib/browser";
-import { formatBytes } from "@/lib/fs";
+import { extractToc } from "@/lib/markdown";
+import type { ViewMode } from "@/types";
+import { CapabilityNotice } from "@/components/CapabilityNotice";
 
 export function App() {
-    const { mode, resolved, setMode } = useTheme();
+    const { mode: themeMode, resolved, setMode: setThemeMode } = useTheme();
     const fs = useFileSystem();
-    const [saveOpen, setSaveOpen] = useState(false);
+    const isMobile = useIsMobile();
 
-    const engine = detectEngine();
+    const [viewMode, setViewMode] = useState<ViewMode>("split");
+    const [saveOpen, setSaveOpen] = useState(false);
+    const workspaceRef = useRef<EditorWorkspaceHandle>(null);
+
+    const toc = useMemo(
+        () => (fs.doc ? extractToc(fs.doc.content) : []),
+        [fs.doc],
+    );
 
     return (
         <TooltipProvider delayDuration={300}>
             <AppShell
                 toolbar={
                     <div className="flex h-12 items-center gap-2 px-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex shrink-0 items-center gap-2">
                             <div className="from-primary flex size-7 items-center justify-center rounded-lg bg-gradient-to-br to-cyan-500">
                                 <FileText className="size-4 text-white" />
                             </div>
-                            <span className="text-sm font-semibold tracking-tight">
+                            <span className="hidden text-sm font-semibold tracking-tight sm:inline">
                                 md-studio
                             </span>
                         </div>
 
-                        <Separator orientation="vertical" className="mx-1 h-5" />
-
                         {fs.doc && (
                             <>
-                                <span className="max-w-56 truncate text-sm">
+                                <Separator orientation="vertical" className="mx-1 h-5" />
+                                <span className="min-w-0 truncate text-sm">
                                     {fs.doc.meta.name}
                                 </span>
                                 {fs.dirty && (
-                                    <span className="bg-primary size-1.5 rounded-full" />
+                                    <span className="bg-primary size-1.5 shrink-0 rounded-full" />
                                 )}
                             </>
                         )}
@@ -51,6 +64,20 @@ export function App() {
 
                         {fs.doc && (
                             <>
+                                {!isMobile && (
+                                    <>
+                                        <ViewModeToggle mode={viewMode} onModeChange={setViewMode} />
+                                        <Separator orientation="vertical" className="mx-1 h-5" />
+                                    </>
+                                )}
+
+                                <TableOfContents
+                                    entries={toc}
+                                    onNavigate={(id) =>
+                                        workspaceRef.current?.scrollToHeading(id)
+                                    }
+                                />
+
                                 <Button
                                     size="sm"
                                     variant="ghost"
@@ -59,18 +86,20 @@ export function App() {
                                     onClick={() => setSaveOpen(true)}
                                 >
                                     <Save className="size-4" />
-                                    Save
+                                    <span className="hidden sm:inline">Save</span>
                                 </Button>
+
                                 <Button
-                                    size="sm"
+                                    size="icon"
                                     variant="ghost"
-                                    className="gap-1.5"
+                                    className="size-8"
                                     disabled={fs.busy}
                                     onClick={fs.open}
+                                    aria-label="Open another file"
                                 >
                                     <FolderOpen className="size-4" />
-                                    Open
                                 </Button>
+
                                 <Button
                                     size="icon"
                                     variant="ghost"
@@ -80,42 +109,43 @@ export function App() {
                                 >
                                     <X className="size-4" />
                                 </Button>
+
                                 <Separator orientation="vertical" className="mx-1 h-5" />
                             </>
                         )}
 
                         <ThemeToggle
-                            mode={mode}
+                            mode={themeMode}
                             resolved={resolved}
-                            onModeChange={setMode}
+                            onModeChange={setThemeMode}
                         />
                     </div>
                 }
                 statusBar={
-                    <div className="text-muted-foreground flex h-8 items-center gap-4 px-3 text-xs">
-                        <span>engine: {engine}</span>
-                        <span>
-                            overwrite:{" "}
-                            {fs.capabilities.canOverwrite ? "supported" : "unsupported"}
-                        </span>
-                        {fs.doc && (
-                            <>
-                                <span>{formatBytes(fs.doc.meta.size)}</span>
-                                <span>{fs.doc.content.length} chars</span>
-                                <span>{fs.dirty ? "unsaved changes" : "saved"}</span>
-                            </>
-                        )}
-                    </div>
+                    fs.doc ? (
+                        <StatusBar
+                            doc={fs.doc}
+                            dirty={fs.dirty}
+                            canOverwrite={fs.capabilities.canOverwrite}
+                        />
+                    ) : undefined
                 }
             >
                 {fs.doc ? (
-                    <textarea
-                        value={fs.doc.content}
-                        onChange={(event) => fs.setContent(event.target.value)}
-                        spellCheck={false}
-                        className="h-full w-full resize-none bg-transparent p-4 font-mono text-sm outline-none"
-                        placeholder="Start typing…"
-                    />
+                    <div className="flex h-full min-h-0 flex-col">
+                        <CapabilityNotice canOverwrite={fs.capabilities.canOverwrite} />
+                        <div className="min-h-0 flex-1 overflow-hidden">
+                            <EditorWorkspace
+                                ref={workspaceRef}
+                                content={fs.doc.content}
+                                onChange={fs.setContent}
+                                mode={viewMode}
+                                onModeChange={setViewMode}
+                                theme={resolved}
+                                isMobile={isMobile}
+                            />
+                        </div>
+                    </div>
                 ) : (
                     <EmptyState
                         useNativePicker={fs.capabilities.fileSystemAccess}

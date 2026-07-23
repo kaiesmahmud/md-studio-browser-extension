@@ -8,31 +8,25 @@ const shared = {
   description:
     "A modern Markdown reader and editor. Open, edit, preview and save .md files directly from your browser.",
   icons: {
-    16: "public/icons/icon-16.png",
-    32: "public/icons/icon-32.png",
-    48: "public/icons/icon-48.png",
-    128: "public/icons/icon-128.png",
+    16: "icons/icon-16.png",
+    32: "icons/icon-32.png",
+    48: "icons/icon-48.png",
+    128: "icons/icon-128.png",
   },
   permissions: ["storage"],
   action: {
     default_title: "Open md-studio",
     default_icon: {
-      16: "public/icons/icon-16.png",
-      32: "public/icons/icon-32.png",
-      48: "public/icons/icon-48.png",
-      128: "public/icons/icon-128.png",
+      16: "icons/icon-16.png",
+      32: "icons/icon-32.png",
+      48: "icons/icon-48.png",
+      128: "icons/icon-128.png",
     },
   },
   content_security_policy: {
     extension_pages:
       "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:;",
   },
-  web_accessible_resources: [
-    {
-      resources: ["src/editor/index.html", "public/fonts/*"],
-      matches: ["<all_urls>"],
-    },
-  ],
 };
 
 export const chromeManifest: ManifestV3Export = {
